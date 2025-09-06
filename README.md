@@ -9,7 +9,7 @@ git clone https://github.com/AlbinaGiliazova/Hotels.git
 
 cd Hotels
 
-Установите Python 3.12.
+Установите Python 3.12 и Docker.
 
 pip install poetry
 
@@ -35,4 +35,6 @@ pip install pre-commit
 
 pre-commit install
 
+docker compose up -d --build
 
+Сайт будет находиться по адресу в браузере 127.0.0.1:80.
