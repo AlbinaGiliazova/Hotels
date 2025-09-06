@@ -38,3 +38,7 @@ pre-commit install
 docker compose up -d --build
 
 Сайт будет находиться по адресу в браузере 127.0.0.1:80.
+
+Создать суперпользователя:
+
+docker-compose exec app python manage.py createsuperuser
