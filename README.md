@@ -52,3 +52,7 @@ docker compose up -d --build
 docker-compose exec app python manage.py createsuperuser
 
 Админка находится по адресу 127.0.0.1/admin.
+
+Swagger UI будет доступен по адресу: [`/api/docs/`](http://localhost:8000/api/docs/)
+
+JSON-схема OpenAPI: [`/api/schema/`](http://localhost:8000/api/schema/)
