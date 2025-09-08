@@ -4,6 +4,7 @@ from django.db import models
 from food.constants import NULLABLE
 from food.models import MealType
 from hotels.models import Hotel
+from rooms.models import Room
 
 
 class CustomUser(AbstractUser):
@@ -22,4 +23,11 @@ class CustomUser(AbstractUser):
         **NULLABLE,
         related_name="users",
         verbose_name="Отель",
+    )
+    room = models.ForeignKey(
+        Room,
+        on_delete=models.SET_NULL,
+        **NULLABLE,
+        related_name="users",
+        verbose_name="Номер",
     )

@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "users.apps.UsersConfig",
     "food.apps.FoodConfig",
     "hotels.apps.HotelsConfig",
+    "rooms.apps.RoomsConfig",
 ]
 
 MIDDLEWARE = [

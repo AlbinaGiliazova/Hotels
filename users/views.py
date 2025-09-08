@@ -6,6 +6,7 @@ from users.serializers import (
     RegisterSerializer,
     UserHotelSerializer,
     UserMealTypeUpdateSerializer,
+    UserRoomSerializer,
 )
 
 User = get_user_model()
@@ -41,4 +42,15 @@ class UserViewSet(
         if serializer.is_valid():
             serializer.update(user, serializer.validated_data)
             return Response({"message": "Отель назначен пользователю"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @decorators.action(
+        detail=True, methods=["post"], url_path="set-room", permission_classes=[permissions.IsAuthenticated]
+    )
+    def set_room(self, request, pk=None):
+        user = self.get_object()
+        serializer = UserRoomSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.update(user, serializer.validated_data)
+            return Response({"message": "Номер назначен пользователю"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

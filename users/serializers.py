@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from food.models import MealType
 from hotels.models import Hotel
+from rooms.models import Room
 
 User = get_user_model()
 
@@ -43,3 +44,13 @@ class UserHotelSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "hotel"]
+
+
+class UserRoomSerializer(serializers.ModelSerializer):
+    """Выбор номера."""
+
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), allow_null=True, required=False)
+
+    class Meta:
+        model = User
+        fields = ["id", "room"]
