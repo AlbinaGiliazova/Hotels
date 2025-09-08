@@ -18,6 +18,11 @@ class Bed(models.Model):
     has_double = models.BooleanField(default=False, verbose_name="Двуспальная кровать")
     double_quantity = models.PositiveIntegerField(default=0, verbose_name="Количество двуспальных кроватей")
 
+    class Meta:
+        verbose_name = "Кровати"
+        verbose_name_plural = "Кровати"
+        ordering = ["id"]
+
     def __str__(self):
         single = f"Односпальные: {self.single_quantity}" if self.has_single else "Односпальных нет"
         double = f"Двуспальные: {self.double_quantity}" if self.has_double else "Двуспальных нет"
@@ -41,6 +46,11 @@ class GeneralAmenities(models.Model):
     bar = models.BooleanField(default=False, verbose_name="Мини-бар")
     room = models.ForeignKey("Room", on_delete=models.CASCADE)
 
+    class Meta:
+        verbose_name = "Общие удобства"
+        verbose_name_plural = "Общие удобства"
+        ordering = ["name"]
+
     def __str__(self):
         return self.name
 
@@ -54,6 +64,11 @@ class DrinkingAmenities(models.Model):
     tea = models.BooleanField(default=False, verbose_name="Чай/кофе")
     dishes = models.BooleanField(default=False, verbose_name="Посуда")
     room = models.ForeignKey("Room", on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = "Кофе-станция"
+        verbose_name_plural = "Кофе-станция"
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
@@ -71,6 +86,11 @@ class BathroomAmenities(models.Model):
     bathrobe = models.BooleanField(default=False, verbose_name="Халат")
     room = models.ForeignKey("Room", on_delete=models.CASCADE)
 
+    class Meta:
+        verbose_name = "В ванной комнате"
+        verbose_name_plural = "В ванной комнате"
+        ordering = ["name"]
+
     def __str__(self):
         return self.name
 
@@ -85,6 +105,11 @@ class ViewAmenities(models.Model):
     sight = models.BooleanField(default=False, verbose_name="На достопримечательности")
     room = models.ForeignKey("Room", on_delete=models.CASCADE)
 
+    class Meta:
+        verbose_name = "Вид"
+        verbose_name_plural = "Вид"
+        ordering = ["name"]
+
     def __str__(self):
         return self.name
 
@@ -96,29 +121,61 @@ class CustomGeneralAmenities(models.Model):
     is_selected = models.BooleanField(default=False, verbose_name="Выбрано")
     room = models.ForeignKey("Room", on_delete=models.CASCADE)
 
+    class Meta:
+        verbose_name = "Дополнительные удобства"
+        verbose_name_plural = "Дополнительные удобства"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
 
 class CustomDrinkingAmenities(models.Model):
-    """Дополнительные удобства."""
+    """Дополнительные удобства напитков."""
 
     name = models.CharField(max_length=NAME_MAX_LENGTH, verbose_name="Название")
     is_selected = models.BooleanField(default=False, verbose_name="Выбрано")
     room = models.ForeignKey("Room", on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = "Дополнительные удобства напитков"
+        verbose_name_plural = "Дополнительные удобства напитков"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
 class CustomBathroomAmenities(models.Model):
-    """Дополнительные удобства."""
+    """Дополнительные удобства в ванной комнате."""
 
     name = models.CharField(max_length=NAME_MAX_LENGTH, verbose_name="Название")
     is_selected = models.BooleanField(default=False, verbose_name="Выбрано")
     room = models.ForeignKey("Room", on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = "Дополнительные удобства в ванной комнате"
+        verbose_name_plural = "Дополнительные удобства в ванной комнате"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
 class CustomViewAmenities(models.Model):
-    """Дополнительные удобства."""
+    """Дополнительные удобства вида."""
 
     name = models.CharField(max_length=NAME_MAX_LENGTH, verbose_name="Название")
     is_selected = models.BooleanField(default=False, verbose_name="Выбрано")
     room = models.ForeignKey("Room", on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = "Дополнительные удобства вида"
+        verbose_name_plural = "Дополнительные удобства вида"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
 class Rule(models.Model):
@@ -137,6 +194,11 @@ class Rule(models.Model):
         default="no",
     )
 
+    class Meta:
+        verbose_name = "Правило номера"
+        verbose_name_plural = "Правила номера"
+        ordering = ["name"]
+
     def __str__(self):
         return self.name
 
@@ -147,6 +209,11 @@ class RoomPhoto(models.Model):
     room = models.ForeignKey("Room", related_name="photos", on_delete=models.CASCADE)
     image = models.ImageField(upload_to=settings.HOTEL_PHOTOS_FOLDER)
     name = models.CharField(max_length=NAME_MAX_LENGTH, blank=True)
+
+    class Meta:
+        verbose_name = "Фотография номера"
+        verbose_name_plural = "Фотографии номера"
+        ordering = ["room__id"]
 
     def __str__(self):
         return f"Фото {self.room.id}"

@@ -59,6 +59,10 @@ class Distance(models.Model):
     class Meta:
         verbose_name = "Расстояние"
         verbose_name_plural = "Расстояния"
+        ordering = ["id"]
+
+    def __str__(self):
+        return self.id
 
 
 class GeneralComfortType(models.Model):
@@ -86,6 +90,11 @@ class AmenityType(models.Model):
 
     name = models.CharField(max_length=NAME_MAX_LENGTH, unique=True)  # Тип удобства
 
+    class Meta:
+        verbose_name = "Вид особых удобств"
+        verbose_name_plural = "Виды особых удобств"
+        ordering = ["name"]
+
     def __str__(self):
         return self.name
 
@@ -103,6 +112,11 @@ class Amenity(models.Model):
         related_name="amenities",
     )
 
+    class Meta:
+        verbose_name = "Особые удобства"
+        verbose_name_plural = "Особые удобства"
+        ordering = ["name"]
+
     def __str__(self):
         return f"{self.name} ({self.amenity_type})"
 
@@ -115,6 +129,11 @@ class Rule(models.Model):
     is_checked = models.BooleanField(default=False)
     description = models.TextField(blank=True)
 
+    class Meta:
+        verbose_name = "Правило отеля"
+        verbose_name_plural = "Правила отеля"
+        ordering = ["name"]
+
     def __str__(self):
         return self.name
 
@@ -125,6 +144,11 @@ class HotelPhoto(models.Model):
     hotel = models.ForeignKey("Hotel", related_name="photos", on_delete=models.CASCADE)
     image = models.ImageField(upload_to=settings.HOTEL_PHOTOS_FOLDER)
     name = models.CharField(max_length=NAME_MAX_LENGTH, blank=True)
+
+    class Meta:
+        verbose_name = "Фотография отеля"
+        verbose_name_plural = "Фотографии отеля"
+        ordering = ["hotel__id"]
 
     def __str__(self):
         return f"Фото {self.hotel.name}"
