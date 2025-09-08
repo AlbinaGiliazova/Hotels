@@ -1,9 +1,9 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from food.constants import NULLABLE
-from food.models import MealType
 from hotels.models import Hotel
+from meals.constants import NULLABLE
+from meals.models import MealType
 from rooms.models import Room
 
 

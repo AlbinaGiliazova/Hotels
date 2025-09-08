@@ -1,72 +1,76 @@
 from django.contrib import admin
 
-from hotels.models import (
-    Amenity,
-    AmenityType,
-    Distance,
-    DistanceType,
-    GeneralComfortType,
-    Hotel,
-    HotelPhoto,
-    Rule,
-    VacationType,
-)
+from hotels.models import Distance, Hotel, HotelAmenity, HotelPhoto, Rule, VacationType
 
 
-@admin.register(VacationType)
-class VacationTypeAdmin(admin.ModelAdmin):
-    list_display = ("id", "name")
-    search_fields = ("name",)
+class HotelAmenityInline(admin.TabularInline):
+    model = HotelAmenity
+    extra = 1
 
 
-@admin.register(DistanceType)
-class DistanceTypeAdmin(admin.ModelAdmin):
-    list_display = ("name",)
-    search_fields = ("name",)
+class RuleInline(admin.TabularInline):
+    model = Rule
+    extra = 1
 
 
-@admin.register(Distance)
-class DistanceAdmin(admin.ModelAdmin):
-    list_display = ("distance_type", "value")
-    list_filter = ("distance_type",)
+class HotelPhotoInline(admin.TabularInline):
+    model = HotelPhoto
+    extra = 1
 
 
-@admin.register(GeneralComfortType)
-class GeneralComfortTypeAdmin(admin.ModelAdmin):
-    list_display = ("name", "icon")
-    search_fields = ("name",)
-
-
-@admin.register(AmenityType)
-class AmenityTypeAdmin(admin.ModelAdmin):
-    list_display = ("name",)
-    search_fields = ("name",)
-
-
-@admin.register(Amenity)
-class AmenityAdmin(admin.ModelAdmin):
-    list_display = ("name", "amenity_type", "is_selected", "hotel")
-    list_filter = ("amenity_type", "hotel", "is_selected")
-    search_fields = ("name",)
-
-
-@admin.register(Rule)
-class RuleAdmin(admin.ModelAdmin):
-    list_display = ("name", "hotel", "is_checked")
-    list_filter = ("hotel", "is_checked")
-    search_fields = ("name",)
-
-
-@admin.register(HotelPhoto)
-class HotelPhotoAdmin(admin.ModelAdmin):
-    list_display = ("name", "hotel", "image")
-    list_filter = ("hotel",)
-    search_fields = ("name",)
+class DistanceInline(admin.TabularInline):
+    model = Distance
+    extra = 1
 
 
 @admin.register(Hotel)
 class HotelAdmin(admin.ModelAdmin):
-    list_display = ("name", "hotel_type", "category", "country", "city")
-    list_filter = ("hotel_type", "category", "country", "city")
-    search_fields = ("name", "address", "country", "city")
-    filter_horizontal = ("distances", "general_comfort")
+    list_display = ("name", "hotel_type", "category", "country", "city", "address", "vacation_type")
+    list_filter = ("hotel_type", "category", "country", "city", "vacation_type")
+    search_fields = ("name", "city", "country", "address")
+    inlines = [HotelAmenityInline, RuleInline, HotelPhotoInline, DistanceInline]
+    fieldsets = (
+        (None, {"fields": ("name", "hotel_type", "category", "vacation_type")}),
+        ("Локация", {"fields": ("country", "city", "address", "latitude", "longitude")}),
+        ("Время заезда и выезда", {"fields": ("check_in_time", "check_out_time")}),
+        ("Описание", {"fields": ("description",)}),
+    )
+
+
+@admin.register(VacationType)
+class VacationTypeAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)
+    ordering = ("name",)
+
+
+@admin.register(Distance)
+class DistanceAdmin(admin.ModelAdmin):
+    list_display = ("name", "value", "hotel")
+    list_filter = ("name", "hotel")
+    search_fields = ("name",)
+    ordering = ("hotel", "name")
+
+
+@admin.register(HotelAmenity)
+class HotelAmenityAdmin(admin.ModelAdmin):
+    list_display = ("name", "amenity_type", "hotel", "icon")
+    list_filter = ("amenity_type", "hotel")
+    search_fields = ("name",)
+    ordering = ("hotel", "name")
+
+
+@admin.register(Rule)
+class HotelRuleAdmin(admin.ModelAdmin):
+    list_display = ("name", "hotel", "is_checked")
+    list_filter = ("hotel", "is_checked")
+    search_fields = ("name",)
+    ordering = ("hotel", "name")
+
+
+@admin.register(HotelPhoto)
+class HotelPhotoAdmin(admin.ModelAdmin):
+    list_display = ("hotel", "description", "image")
+    list_filter = ("hotel",)
+    search_fields = ("description",)
+    ordering = ("hotel",)

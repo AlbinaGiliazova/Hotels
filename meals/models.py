@@ -2,7 +2,7 @@
 
 from django.db import models
 
-from food.constants import (
+from meals.constants import (
     PRICE_MAX_DIGITS,
     TYPE_MAX_LENGTH,
 )
@@ -19,7 +19,7 @@ class MealType(models.Model):
         ("all", "All inclusive"),
         ("ultra", "Ultra All inclusive"),
     ]
-    type = models.CharField(max_length=TYPE_MAX_LENGTH, choices=MEAL_CHOICES, unique=True)
+    type = models.CharField(max_length=TYPE_MAX_LENGTH, choices=MEAL_CHOICES)
     price = models.DecimalField(max_digits=PRICE_MAX_DIGITS, decimal_places=2)
 
     class Meta:

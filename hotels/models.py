@@ -4,9 +4,9 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from food.constants import NULLABLE
 from hotels.constants import (
     ADDRESS_MAX_LENGTH,
+    AMENITY_TYPE_MAX_LENGTH,
     CITY_MAX_LENGTH,
     DISTANCE_TYPE_MAX_LENGTH,
     HOTEL_MAX_LENGTH,
@@ -14,6 +14,7 @@ from hotels.constants import (
     NAME_MAX_LENGTH,
     VACATION_TYPE_MAX_LENGTH,
 )
+from meals.constants import NULLABLE
 
 
 class VacationType(models.Model):
@@ -30,31 +31,16 @@ class VacationType(models.Model):
         return self.name
 
 
-class DistanceType(models.Model):
-    """До какого объекта берется расстояние."""
-
-    name = models.CharField("Тип объекта", max_length=DISTANCE_TYPE_MAX_LENGTH, unique=True)
-
-    class Meta:
-        verbose_name = "Тип объекта для расстояния"
-        verbose_name_plural = "Типы объектов для расстояния"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
 class Distance(models.Model):
     """Расстояние."""
 
-    distance_type = models.ForeignKey(
-        DistanceType, on_delete=models.CASCADE, verbose_name="Тип объекта", related_name="distances"
-    )
+    name = models.CharField("Тип объекта", max_length=DISTANCE_TYPE_MAX_LENGTH, unique=True)
     value = models.PositiveIntegerField(
         "Расстояние (м)",
         **NULLABLE,
         validators=[MinValueValidator(1)],  # только положительные числа
     )
+    hotel = models.ForeignKey("Hotel", related_name="distances", on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = "Расстояние"
@@ -65,10 +51,29 @@ class Distance(models.Model):
         return self.id
 
 
-class GeneralComfortType(models.Model):
-    """Основные удобства."""
+class HotelAmenity(models.Model):
+    """Удобства."""
 
-    name = models.CharField("Название", max_length=NAME_MAX_LENGTH, unique=True)
+    AMENITY_TYPE = [
+        ("general", "Основные"),
+        ("room", "В номере"),
+        ("common", "Общие"),
+        ("sport", "Спорт и отдых"),
+        ("children", "Для детей"),
+    ]
+    amenity_type = models.CharField(
+        "Тип удобств",
+        max_length=AMENITY_TYPE_MAX_LENGTH,
+        choices=AMENITY_TYPE,
+        default="general",
+    )
+    name = models.CharField(max_length=NAME_MAX_LENGTH, verbose_name="Название")
+    hotel = models.ForeignKey(
+        "Hotel",
+        on_delete=models.CASCADE,
+        verbose_name="Отель",
+        related_name="amenities",
+    )
     icon = models.ImageField(
         "Иконка",
         upload_to=settings.COMFORT_ICONS_FOLDER,  # подпапка внутри MEDIA_ROOT
@@ -77,48 +82,12 @@ class GeneralComfortType(models.Model):
     )
 
     class Meta:
-        verbose_name = "Вид основных удобств"
-        verbose_name_plural = "Виды основных удобств"
+        verbose_name = "Удобства отеля"
+        verbose_name_plural = "Удобства отеля"
         ordering = ["name"]
 
     def __str__(self):
         return self.name
-
-
-class AmenityType(models.Model):
-    """Вид особых удобств."""
-
-    name = models.CharField(max_length=NAME_MAX_LENGTH, unique=True)  # Тип удобства
-
-    class Meta:
-        verbose_name = "Вид особых удобств"
-        verbose_name_plural = "Виды особых удобств"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class Amenity(models.Model):
-    """Особые удобства."""
-
-    name = models.CharField(max_length=NAME_MAX_LENGTH)
-    amenity_type = models.ForeignKey(AmenityType, related_name="amenities", on_delete=models.CASCADE)
-    is_selected = models.BooleanField(default=False)  # Галочка
-    hotel = models.ForeignKey(
-        "Hotel",
-        on_delete=models.CASCADE,
-        verbose_name="Отель",
-        related_name="amenities",
-    )
-
-    class Meta:
-        verbose_name = "Особые удобства"
-        verbose_name_plural = "Особые удобства"
-        ordering = ["name"]
-
-    def __str__(self):
-        return f"{self.name} ({self.amenity_type})"
 
 
 class Rule(models.Model):
@@ -143,7 +112,7 @@ class HotelPhoto(models.Model):
 
     hotel = models.ForeignKey("Hotel", related_name="photos", on_delete=models.CASCADE)
     image = models.ImageField(upload_to=settings.HOTEL_PHOTOS_FOLDER)
-    name = models.CharField(max_length=NAME_MAX_LENGTH, blank=True)
+    description = models.CharField(max_length=NAME_MAX_LENGTH, blank=True)
 
     class Meta:
         verbose_name = "Фотография отеля"
@@ -174,7 +143,7 @@ class Hotel(models.Model):
         null=True,
     )
     hotel_type = models.CharField(
-        "Тип отеля",
+        "Тип размещения",
         max_length=HOTEL_TYPE_MAX_LENGTH,
         choices=HOTEL_TYPES,
         default="hotel",
@@ -187,32 +156,16 @@ class Hotel(models.Model):
     country = models.CharField("Страна", max_length=CITY_MAX_LENGTH)
     city = models.CharField("Город", max_length=CITY_MAX_LENGTH)
     address = models.CharField("Адрес", max_length=ADDRESS_MAX_LENGTH)
-    latitude = models.DecimalField(
+    latitude = models.FloatField(
         "Широта",
-        max_digits=9,  # ±90.000000 (диапазон широты)
-        decimal_places=6,
         validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)],
     )
-    longitude = models.DecimalField(
+    longitude = models.FloatField(
         "Долгота",
-        max_digits=10,  # ±180.000000
-        decimal_places=6,
         validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)],
     )
-    distances = models.ManyToManyField(
-        Distance,
-        verbose_name="Расстояния",
-        related_name="hotels",
-        **NULLABLE,
-    )
-    general_comfort = models.ManyToManyField(
-        GeneralComfortType,
-        verbose_name="Основные удобства",
-        related_name="hotels",
-        **NULLABLE,
-    )
-    check_in_time = models.TimeField(default=time(14, 0), verbose_name="Заселение")
-    check_out_time = models.TimeField(default=time(12, 0), verbose_name="Выезд")
+    check_in_time = models.TimeField("Заселение", default=time(14, 0))
+    check_out_time = models.TimeField("Выезд", default=time(12, 0))
     description = models.TextField("Описание", blank=True)
 
     class Meta:

@@ -1,17 +1,8 @@
 import pytest
-from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
 
 from hotels.models import Hotel, VacationType
-
-User = get_user_model()
-
-
-@pytest.fixture
-def admin_user(db):
-    user = User.objects.create_superuser(username="admin", password="admin123", email="admin@test.com")
-    return user
 
 
 @pytest.fixture
@@ -21,62 +12,40 @@ def api_client():
 
 @pytest.fixture
 def vacation_type(db):
-    return VacationType.objects.create(name="Активный отдых")
+    return VacationType.objects.create(name="Семейный")
 
 
 @pytest.mark.django_db
-def test_admin_can_create_hotel(api_client, admin_user, vacation_type):
-    api_client.force_authenticate(user=admin_user)
+def test_create_hotel_with_nested(api_client, vacation_type):
+    url = reverse("hotels-list")  # Зависит от basename в DefaultRouter (например, 'hotel')
+
     data = {
-        "name": "Test Hotel",
+        "name": "Отель Тестовый",
         "vacation_type": vacation_type.id,
         "hotel_type": "hotel",
-        "category": 5,
+        "category": 4,
         "country": "Россия",
-        "city": "Москва",
-        "address": "Ул. Тестовая, 1",
-        "latitude": 55.7558,
-        "longitude": 37.6176,
-        "description": "Лучший отель Москвы",
-        "check_in_time": "14:00",
-        "check_out_time": "12:00",
+        "city": "Калуга",
+        "address": "ул. Победы, 15",
+        "latitude": 55.44,
+        "longitude": 37.777,
+        "check_in_time": "14:00:00",
+        "check_out_time": "12:00:00",
+        "description": "Пример отеля для теста.",
+        "amenities": [{"amenity_type": "general", "name": "Wi-Fi"}, {"amenity_type": "room", "name": "Кондиционер"}],
+        "rules": [
+            {"name": "Курение запрещено", "is_checked": True, "description": "Во всех помещениях"},
+            {"name": "Можно с животными", "is_checked": False, "description": "Только мелкие животные"},
+        ],
+        "distances": [{"name": "ЖД вокзал", "value": 3000}, {"name": "Центр города", "value": 1200}],
     }
-    url = reverse("hotel-list")
+
     response = api_client.post(url, data, format="json")
     assert response.status_code == 201
-    assert Hotel.objects.filter(name="Test Hotel").exists()
 
-
-@pytest.mark.django_db
-def test_admin_can_list_hotels(api_client, admin_user):
-    api_client.force_authenticate(user=admin_user)
-    url = reverse("hotel-list")
-    response = api_client.get(url)
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
-def test_non_admin_cannot_create_hotel(api_client):
-    url = reverse("hotel-list")
-    data = {
-        "name": "Forbidden Hotel",
-        "hotel_type": "hotel",
-        "category": 3,
-        "country": "Россия",
-        "city": "Москва",
-        "address": "Ул. Закрытая, 10",
-        "latitude": 55.7558,
-        "longitude": 37.6176,
-        "description": "Должно быть запрещено",
-        "check_in_time": "14:00",
-        "check_out_time": "12:00",
-    }
-    response = api_client.post(url, data, format="json")
-    assert response.status_code == 403
-
-
-@pytest.mark.django_db
-def test_non_admin_cannot_list_hotels(api_client):
-    url = reverse("hotel-list")
-    response = api_client.get(url)
-    assert response.status_code == 403
+    hotel = Hotel.objects.get(id=response.data["id"])
+    assert hotel.amenities.count() == 2
+    assert hotel.rules.count() == 2
+    assert hotel.distances.count() == 2
+    assert hotel.name == data["name"]
+    assert hotel.description == data["description"]

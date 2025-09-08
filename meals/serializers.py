@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from food.models import MealType
+from meals.models import MealType
 
 
 class MealTypeSerializer(serializers.ModelSerializer):

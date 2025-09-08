@@ -1,53 +1,56 @@
 from rest_framework import serializers
 
-from hotels.models import Amenity, Distance, GeneralComfortType, Hotel, HotelPhoto, Rule, VacationType
+from hotels.models import Distance, Hotel, HotelAmenity, HotelPhoto, Rule, VacationType
 
 
-class HotelPhotoSerializer(serializers.ModelSerializer):
-    """Фотографии отеля."""
-
+class VacationTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = HotelPhoto
-        fields = ["image", "name"]
-
-
-class RuleSerializer(serializers.ModelSerializer):
-    """Правила отеля."""
-
-    class Meta:
-        model = Rule
-        fields = ["name", "is_checked", "description"]
-
-
-class AmenitySerializer(serializers.ModelSerializer):
-    """Особые удобства."""
-
-    amenity_type = serializers.PrimaryKeyRelatedField(queryset=Amenity.objects.all())
-
-    class Meta:
-        model = Amenity
-        fields = ["name", "amenity_type", "is_selected"]
+        model = VacationType
+        fields = ["id", "name"]
 
 
 class DistanceSerializer(serializers.ModelSerializer):
     """Расстояния."""
 
-    distance_type = serializers.PrimaryKeyRelatedField(queryset=Distance.objects.all())
-
     class Meta:
         model = Distance
-        fields = ["distance_type", "value"]
+        exclude = ("hotel",)
+
+
+class HotelAmenitySerializer(serializers.ModelSerializer):
+    """Удобства."""
+
+    class Meta:
+        model = HotelAmenity
+        exclude = ("hotel",)
+
+
+class RuleSerializer(serializers.ModelSerializer):
+    """Правила."""
+
+    class Meta:
+        model = Rule
+        exclude = ("hotel",)
+
+
+class HotelPhotoSerializer(serializers.ModelSerializer):
+    """Фотографии."""
+
+    class Meta:
+        model = HotelPhoto
+        exclude = ("hotel",)
 
 
 class HotelSerializer(serializers.ModelSerializer):
-    """Сериализатор отеля."""
+    """Отели."""
 
-    photos = HotelPhotoSerializer(many=True, required=False)
+    amenities = HotelAmenitySerializer(many=True, required=False)
     rules = RuleSerializer(many=True, required=False)
-    amenities = AmenitySerializer(many=True, required=False)
-    distances = serializers.PrimaryKeyRelatedField(many=True, queryset=Distance.objects.all())
-    general_comfort = serializers.PrimaryKeyRelatedField(many=True, queryset=GeneralComfortType.objects.all())
-    vacation_type = serializers.PrimaryKeyRelatedField(queryset=VacationType.objects.all())
+    distances = DistanceSerializer(many=True, required=False)
+    photos = HotelPhotoSerializer(many=True, required=False)
+    vacation_type = serializers.PrimaryKeyRelatedField(
+        queryset=VacationType.objects.all(), allow_null=True, required=False
+    )
 
     class Meta:
         model = Hotel
@@ -62,34 +65,60 @@ class HotelSerializer(serializers.ModelSerializer):
             "address",
             "latitude",
             "longitude",
-            "distances",
-            "general_comfort",
             "check_in_time",
             "check_out_time",
             "description",
             "amenities",
             "rules",
+            "distances",
             "photos",
         ]
 
     def create(self, validated_data):
-        photos_data = validated_data.pop("photos", [])
-        rules_data = validated_data.pop("rules", [])
         amenities_data = validated_data.pop("amenities", [])
+        rules_data = validated_data.pop("rules", [])
+        distances_data = validated_data.pop("distances", [])
+        photos_data = validated_data.pop("photos", [])
 
         hotel = Hotel.objects.create(**validated_data)
 
-        # Many-to-Many (distances/general_comfort) автоматически можно добавить через .set() или .add() если не используются вложенные созданные объекты
-        if "distances" in self.initial_data:
-            hotel.distances.set(validated_data.get("distances", []))
-        if "general_comfort" in self.initial_data:
-            hotel.general_comfort.set(validated_data.get("general_comfort", []))
-
-        for photo_data in photos_data:
-            HotelPhoto.objects.create(hotel=hotel, **photo_data)
-        for rule_data in rules_data:
-            Rule.objects.create(hotel=hotel, **rule_data)
-        for amenity_data in amenities_data:
-            Amenity.objects.create(hotel=hotel, **amenity_data)
+        for amenity in amenities_data:
+            HotelAmenity.objects.create(hotel=hotel, **amenity)
+        for rule in rules_data:
+            Rule.objects.create(hotel=hotel, **rule)
+        for distance in distances_data:
+            Distance.objects.create(hotel=hotel, **distance)
+        for photo in photos_data:
+            HotelPhoto.objects.create(hotel=hotel, **photo)
 
         return hotel
+
+    def update(self, instance, validated_data):
+        amenities_data = validated_data.pop("amenities", None)
+        rules_data = validated_data.pop("rules", None)
+        distances_data = validated_data.pop("distances", None)
+        photos_data = validated_data.pop("photos", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Полная замена вложенных объектов
+        if amenities_data is not None:
+            instance.amenities.all().delete()
+            for amenity in amenities_data:
+                HotelAmenity.objects.create(hotel=instance, **amenity)
+        if rules_data is not None:
+            instance.rules.all().delete()
+            for rule in rules_data:
+                Rule.objects.create(hotel=instance, **rule)
+        if distances_data is not None:
+            instance.distances.all().delete()
+            for distance in distances_data:
+                Distance.objects.create(hotel=instance, **distance)
+        if photos_data is not None:
+            instance.photos.all().delete()
+            for photo in photos_data:
+                HotelPhoto.objects.create(hotel=instance, **photo)
+
+        return instance

@@ -1,12 +1,42 @@
-from rest_framework import permissions, viewsets
+from rest_framework import viewsets
 
-from .models import Hotel
-from .serializers import HotelSerializer
+from hotels.serializers import (
+    DistanceSerializer,
+    HotelAmenitySerializer,
+    HotelPhotoSerializer,
+    HotelSerializer,
+    RuleSerializer,
+    VacationTypeSerializer,
+)
+
+from .models import Distance, Hotel, HotelAmenity, HotelPhoto, Rule, VacationType
 
 
 class HotelViewSet(viewsets.ModelViewSet):
-    """Вьюсет отелей."""
-
-    queryset = Hotel.objects.all().order_by("name")
+    queryset = Hotel.objects.all()
     serializer_class = HotelSerializer
-    permission_classes = [permissions.IsAdminUser]
+
+
+class VacationTypeViewSet(viewsets.ModelViewSet):
+    queryset = VacationType.objects.all()
+    serializer_class = VacationTypeSerializer
+
+
+class DistanceViewSet(viewsets.ModelViewSet):
+    queryset = Distance.objects.all()
+    serializer_class = DistanceSerializer
+
+
+class HotelAmenityViewSet(viewsets.ModelViewSet):
+    queryset = HotelAmenity.objects.all()
+    serializer_class = HotelAmenitySerializer
+
+
+class RuleViewSet(viewsets.ModelViewSet):
+    queryset = Rule.objects.all()
+    serializer_class = RuleSerializer
+
+
+class HotelPhotoViewSet(viewsets.ModelViewSet):
+    queryset = HotelPhoto.objects.all()
+    serializer_class = HotelPhotoSerializer

@@ -23,6 +23,10 @@ ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS if host.strip()]
 # Application definition
 
 INSTALLED_APPS = [
+    "users",
+    "meals",
+    "hotels",
+    "rooms",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -31,10 +35,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "drf_spectacular",
-    "users.apps.UsersConfig",
-    "food.apps.FoodConfig",
-    "hotels.apps.HotelsConfig",
-    "rooms.apps.RoomsConfig",
 ]
 
 MIDDLEWARE = [

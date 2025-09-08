@@ -1,8 +1,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from food.models import MealType
 from hotels.models import Hotel
+from meals.models import MealType
 from rooms.models import Room
 
 User = get_user_model()

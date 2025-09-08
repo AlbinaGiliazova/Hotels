@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from food.models import MealType
+from meals.models import MealType
 
 
 @admin.register(MealType)

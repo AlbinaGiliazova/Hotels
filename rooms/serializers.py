@@ -1,115 +1,39 @@
 from rest_framework import serializers
 
-from rooms.models import (
-    BathroomAmenities,
-    Bed,
-    CustomBathroomAmenities,
-    CustomDrinkingAmenities,
-    CustomGeneralAmenities,
-    CustomViewAmenities,
-    DrinkingAmenities,
-    GeneralAmenities,
-    Room,
-    ViewAmenities,
-)
+from rooms.models import Amenity, MealType, Room, RoomPhoto, Rule
 
 
-class BedSerializer(serializers.ModelSerializer):
-    """Кровати."""
+class AmenitySerializer(serializers.ModelSerializer):
+    """Удобства номера."""
 
     class Meta:
-        model = Bed
-        fields = [
-            "id",
-            "has_single",
-            "single_quantity",
-            "has_double",
-            "double_quantity",
-        ]
+        model = Amenity
+        fields = ["id", "amenity_type", "name"]
 
 
-class GeneralAmenitiesSerializer(serializers.ModelSerializer):
-    """Общие удобства."""
+class RuleSerializer(serializers.ModelSerializer):
+    """Правила номера."""
 
     class Meta:
-        model = GeneralAmenities
-        exclude = ("room",)
+        model = Rule
+        fields = ["id", "name", "rule_choice"]
 
 
-class DrinkingAmenitiesSerializer(serializers.ModelSerializer):
-    """Напитки."""
-
-    class Meta:
-        model = DrinkingAmenities
-        exclude = ("room",)
-
-
-class BathroomAmenitiesSerializer(serializers.ModelSerializer):
-    """Ванная комната."""
+class RoomPhotoSerializer(serializers.ModelSerializer):
+    """Фотографии номера."""
 
     class Meta:
-        model = BathroomAmenities
-        exclude = ("room",)
-
-
-class ViewAmenitiesSerializer(serializers.ModelSerializer):
-    """Вид."""
-
-    class Meta:
-        model = ViewAmenities
-        exclude = ("room",)
-
-
-class CustomGeneralAmenitiesSerializer(serializers.ModelSerializer):
-    """Дополнительные общие удобства."""
-
-    class Meta:
-        model = CustomGeneralAmenities
-        exclude = ("room",)
-
-
-class CustomBathroomAmenitiesSerializer(serializers.ModelSerializer):
-    """Дополнительные удобства в ванной комнате."""
-
-    class Meta:
-        model = CustomBathroomAmenities
-        exclude = ("room",)
-
-
-class CustomViewAmenitiesSerializer(serializers.ModelSerializer):
-    """Дополнительные удобства вида."""
-
-    class Meta:
-        model = CustomViewAmenities
-        exclude = ("room",)
-
-
-class CustomDrinkingAmenitiesSerializer(serializers.ModelSerializer):
-    """Дополнительные удобства напитков."""
-
-    class Meta:
-        model = CustomDrinkingAmenities
-        exclude = ("room",)
+        model = RoomPhoto
+        fields = ["id", "image", "description"]
 
 
 class RoomSerializer(serializers.ModelSerializer):
-    """Сериализатор номеров."""
+    """Номер."""
 
-    beds = BedSerializer()
-    general_amenities = GeneralAmenitiesSerializer(many=True, source="generalamenities_set", required=False)
-    drinking_amenities = DrinkingAmenitiesSerializer(many=True, source="drinkingamenities_set", required=False)
-    bathroom_amenities = BathroomAmenitiesSerializer(many=True, source="bathroomamenities_set", required=False)
-    view_amenities = ViewAmenitiesSerializer(many=True, source="viewamenities_set", required=False)
-    custom_general_amenities = CustomGeneralAmenitiesSerializer(
-        many=True, source="customgeneralamenities_set", required=False
-    )
-    custom_drinking_amenities = CustomDrinkingAmenitiesSerializer(
-        many=True, source="customdrinkingamenities_set", required=False
-    )
-    custom_bathroom_amenities = CustomBathroomAmenitiesSerializer(
-        many=True, source="custombathroomamenities_set", required=False
-    )
-    custom_view_amenities = CustomViewAmenitiesSerializer(many=True, source="customviewamenities_set", required=False)
+    amenities = AmenitySerializer(many=True, required=False)
+    rules = RuleSerializer(many=True, required=False)
+    photos = RoomPhotoSerializer(many=True, required=False)
+    meal_type = serializers.PrimaryKeyRelatedField(queryset=MealType.objects.all(), allow_null=True)
 
     class Meta:
         model = Room
@@ -121,46 +45,48 @@ class RoomSerializer(serializers.ModelSerializer):
             "children",
             "area",
             "quantity",
-            "beds",
-            "general_amenities",
-            "drinking_amenities",
-            "bathroom_amenities",
-            "view_amenities",
-            "custom_general_amenities",
-            "custom_drinking_amenities",
-            "custom_bathroom_amenities",
-            "custom_view_amenities",
+            "double_bed",
+            "single_bed",
+            "amenities",
+            "rules",
+            "photos",
         ]
 
     def create(self, validated_data):
-        beds_data = validated_data.pop("beds")
-        general_amenities_data = validated_data.pop("generalamenities_set", [])
-        drinking_amenities_data = validated_data.pop("drinkingamenities_set", [])
-        bathroom_amenities_data = validated_data.pop("bathroomamenities_set", [])
-        view_amenities_data = validated_data.pop("viewamenities_set", [])
-        custom_general_amenities_data = validated_data.pop("customgeneralamenities_set", [])
-        custom_drinking_amenities_data = validated_data.pop("customdrinkingamenities_set", [])
-        custom_bathroom_amenities_data = validated_data.pop("custombathroomamenities_set", [])
-        custom_view_amenities_data = validated_data.pop("customviewamenities_set", [])
-
-        bed = Bed.objects.create(*beds_data)
-        room = Room.objects.create(beds=bed, **validated_data)
-
-        for amenity_data in general_amenities_data:
-            GeneralAmenities.objects.create(room=room, **amenity_data)
-        for amenity_data in drinking_amenities_data:
-            DrinkingAmenities.objects.create(room=room, **amenity_data)
-        for amenity_data in bathroom_amenities_data:
-            BathroomAmenities.objects.create(room=room, **amenity_data)
-        for amenity_data in view_amenities_data:
-            ViewAmenities.objects.create(room=room, **amenity_data)
-        for amenity_data in custom_general_amenities_data:
-            CustomGeneralAmenities.objects.create(room=room, **amenity_data)
-        for amenity_data in custom_drinking_amenities_data:
-            CustomDrinkingAmenities.objects.create(room=room, **amenity_data)
-        for amenity_data in custom_bathroom_amenities_data:
-            CustomBathroomAmenities.objects.create(room=room, **amenity_data)
-        for amenity_data in custom_view_amenities_data:
-            CustomViewAmenities.objects.create(room=room, **amenity_data)
-
+        amenities_data = validated_data.pop("amenities", [])
+        rules_data = validated_data.pop("rules", [])
+        photos_data = validated_data.pop("photos", [])
+        room = Room.objects.create(**validated_data)
+        for amenity in amenities_data:
+            Amenity.objects.create(room=room, **amenity)
+        for rule in rules_data:
+            Rule.objects.create(room=room, **rule)
+        for photo in photos_data:
+            RoomPhoto.objects.create(room=room, **photo)
         return room
+
+    def update(self, instance, validated_data):
+        amenities_data = validated_data.pop("amenities", None)
+        rules_data = validated_data.pop("rules", None)
+        photos_data = validated_data.pop("photos", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if amenities_data is not None:
+            # Сначала удаляем старые, потом создаём новые
+            Amenity.objects.filter(room=instance).delete()
+            for amenity in amenities_data:
+                Amenity.objects.create(room=instance, **amenity)
+
+        if rules_data is not None:
+            Rule.objects.filter(room=instance).delete()
+            for rule in rules_data:
+                Rule.objects.create(room=instance, **rule)
+
+        if photos_data is not None:
+            RoomPhoto.objects.filter(room=instance).delete()
+            for photo in photos_data:
+                RoomPhoto.objects.create(room=instance, **photo)
+        return instance

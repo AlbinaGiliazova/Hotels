@@ -1,177 +1,40 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from food.models import MealType
+from meals.constants import NULLABLE
+from meals.models import MealType
 from rooms.constants import (
+    AMENITY_TYPE_MAX_LENGTH,
+    DOUBLE_BED_MAX_QUANTITY,
     NAME_MAX_LENGTH,
     ROOM_TYPE_MAX_LENGTH,
     RULE_CHOICE_MAX_LENGTH,
+    SINGLE_BED_MAX_QUANTITY,
 )
 
 
-class Bed(models.Model):
-    """Кровати."""
+class Amenity(models.Model):
+    """Удобства."""
 
-    has_single = models.BooleanField(default=False, verbose_name="Односпальная кровать")
-    single_quantity = models.PositiveIntegerField(default=0, verbose_name="Количество односпальных кроватей")
-
-    has_double = models.BooleanField(default=False, verbose_name="Двуспальная кровать")
-    double_quantity = models.PositiveIntegerField(default=0, verbose_name="Количество двуспальных кроватей")
-
-    class Meta:
-        verbose_name = "Кровати"
-        verbose_name_plural = "Кровати"
-        ordering = ["id"]
-
-    def __str__(self):
-        single = f"Односпальные: {self.single_quantity}" if self.has_single else "Односпальных нет"
-        double = f"Двуспальные: {self.double_quantity}" if self.has_double else "Двуспальных нет"
-        return f"{single}, {double}, Выбрано: {self.is_selected}"
-
-
-class GeneralAmenities(models.Model):
-    """Общие удобства."""
-
-    name = models.CharField(max_length=NAME_MAX_LENGTH, verbose_name="Общие")
-    wifi = models.BooleanField(default=False, verbose_name="Бесплатный Wi-Fi")
-    sofa = models.BooleanField(default=False, verbose_name="Диван")
-    conditioner = models.BooleanField(default=False, verbose_name="Кондиционер")
-    heating = models.BooleanField(default=False, verbose_name="Отопление")
-    beds = models.BooleanField(default=False, verbose_name="Удобные кровати")
-    tv = models.BooleanField(default=False, verbose_name="Телевизор")
-    dinnertable = models.BooleanField(default=False, verbose_name="Обеденный стол")
-    kitchen = models.BooleanField(default=False, verbose_name="Кухня")
-    worktable = models.BooleanField(default=False, verbose_name="Рабочий стол")
-    wardrobe = models.BooleanField(default=False, verbose_name="Шкаф или гардероб")
-    bar = models.BooleanField(default=False, verbose_name="Мини-бар")
+    AMENITY_TYPE = [
+        ("general", "Общие"),
+        ("coffee", "Кофе-станция"),
+        ("bathroom", "В ванной комнате"),
+        ("view", "Вид"),
+    ]
+    amenity_type = models.CharField(
+        "Тип удобств",
+        max_length=AMENITY_TYPE_MAX_LENGTH,
+        choices=AMENITY_TYPE,
+        default="general",
+    )
+    name = models.CharField("Название", max_length=NAME_MAX_LENGTH)
     room = models.ForeignKey("Room", on_delete=models.CASCADE)
 
     class Meta:
-        verbose_name = "Общие удобства"
-        verbose_name_plural = "Общие удобства"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class DrinkingAmenities(models.Model):
-    """Кофе-станция."""
-
-    name = models.CharField(max_length=NAME_MAX_LENGTH, verbose_name="Кофе-станция")
-    teapot = models.BooleanField(default=False, verbose_name="Электрический чайник")
-    coffee = models.BooleanField(default=False, verbose_name="Кофемашина")
-    tea = models.BooleanField(default=False, verbose_name="Чай/кофе")
-    dishes = models.BooleanField(default=False, verbose_name="Посуда")
-    room = models.ForeignKey("Room", on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = "Кофе-станция"
-        verbose_name_plural = "Кофе-станция"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class BathroomAmenities(models.Model):
-    """В ванной комнате."""
-
-    name = models.CharField(max_length=NAME_MAX_LENGTH, verbose_name="В ванной комнате")
-    bath = models.BooleanField(default=False, verbose_name="Ванна")
-    shower = models.BooleanField(default=False, verbose_name="Душ")
-    bidet = models.BooleanField(default=False, verbose_name="Биде")
-    jakuzzi = models.BooleanField(default=False, verbose_name="Джакузи")
-    fan = models.BooleanField(default=False, verbose_name="Фен")
-    bathrobe = models.BooleanField(default=False, verbose_name="Халат")
-    room = models.ForeignKey("Room", on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = "В ванной комнате"
-        verbose_name_plural = "В ванной комнате"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class ViewAmenities(models.Model):
-    """Вид."""
-
-    name = models.CharField(max_length=NAME_MAX_LENGTH, verbose_name="Вид")
-    sea = models.BooleanField(default=False, verbose_name="На море")
-    pool = models.BooleanField(default=False, verbose_name="На бассейн")
-    park = models.BooleanField(default=False, verbose_name="На парк")
-    sight = models.BooleanField(default=False, verbose_name="На достопримечательности")
-    room = models.ForeignKey("Room", on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = "Вид"
-        verbose_name_plural = "Вид"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class CustomGeneralAmenities(models.Model):
-    """Дополнительные удобства."""
-
-    name = models.CharField(max_length=NAME_MAX_LENGTH, verbose_name="Название")
-    is_selected = models.BooleanField(default=False, verbose_name="Выбрано")
-    room = models.ForeignKey("Room", on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = "Дополнительные удобства"
-        verbose_name_plural = "Дополнительные удобства"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class CustomDrinkingAmenities(models.Model):
-    """Дополнительные удобства напитков."""
-
-    name = models.CharField(max_length=NAME_MAX_LENGTH, verbose_name="Название")
-    is_selected = models.BooleanField(default=False, verbose_name="Выбрано")
-    room = models.ForeignKey("Room", on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = "Дополнительные удобства напитков"
-        verbose_name_plural = "Дополнительные удобства напитков"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class CustomBathroomAmenities(models.Model):
-    """Дополнительные удобства в ванной комнате."""
-
-    name = models.CharField(max_length=NAME_MAX_LENGTH, verbose_name="Название")
-    is_selected = models.BooleanField(default=False, verbose_name="Выбрано")
-    room = models.ForeignKey("Room", on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = "Дополнительные удобства в ванной комнате"
-        verbose_name_plural = "Дополнительные удобства в ванной комнате"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class CustomViewAmenities(models.Model):
-    """Дополнительные удобства вида."""
-
-    name = models.CharField(max_length=NAME_MAX_LENGTH, verbose_name="Название")
-    is_selected = models.BooleanField(default=False, verbose_name="Выбрано")
-    room = models.ForeignKey("Room", on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = "Дополнительные удобства вида"
-        verbose_name_plural = "Дополнительные удобства вида"
+        verbose_name = "Удобства номера"
+        verbose_name_plural = "Удобства номера"
         ordering = ["name"]
 
     def __str__(self):
@@ -208,7 +71,7 @@ class RoomPhoto(models.Model):
 
     room = models.ForeignKey("Room", related_name="photos", on_delete=models.CASCADE)
     image = models.ImageField(upload_to=settings.HOTEL_PHOTOS_FOLDER)
-    name = models.CharField(max_length=NAME_MAX_LENGTH, blank=True)
+    description = models.CharField(max_length=NAME_MAX_LENGTH, blank=True)
 
     class Meta:
         verbose_name = "Фотография номера"
@@ -267,11 +130,23 @@ class Room(models.Model):
         "Количество номеров этой категории",
         default=1,
     )
-    beds = models.ForeignKey(
-        Bed,
-        on_delete=models.SET_NULL,
-        related_name="rooms",
-        null=True,
+    double_bed = models.IntegerField(
+        "Двуспальная кровать",
+        help_text="Двуспальная кровать",
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(DOUBLE_BED_MAX_QUANTITY),
+        ],
+        **NULLABLE,
+    )
+    single_bed = models.IntegerField(
+        "Односпальная кровать",
+        help_text="Односпальная кровать",
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(SINGLE_BED_MAX_QUANTITY),
+        ],
+        **NULLABLE,
     )
 
     class Meta:

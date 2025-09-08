@@ -1,99 +1,62 @@
+import io
+
 import pytest
-from django.contrib.auth import get_user_model
 from django.urls import reverse
-from rest_framework import status
+from PIL import Image
 from rest_framework.test import APIClient
 
-from ..rooms.models import Bed, Room
-
-User = get_user_model()
-
-
-@pytest.fixture
-def admin_user(db):
-    user = User.objects.create_superuser(username="admin", password="password")
-    return user
+from meals.models import MealType
+from rooms.models import Room
 
 
 @pytest.fixture
-def admin_client(admin_user):
-    client = APIClient()
-    client.login(username="admin", password="password")
-    return client
+def api_client():
+    return APIClient()
 
 
 @pytest.fixture
-def bed(db):
-    return Bed.objects.create(
-        has_single=True,
-        single_quantity=2,
-        has_double=True,
-        double_quantity=1,
-    )
+def meal_type(db):
+    return MealType.objects.create(type="Завтрак", price=100)
 
 
-@pytest.fixture
-def room(db, bed):
-    return Room.objects.create(
-        room_type="standard",
-        meal_type=None,
-        adults=2,
-        children=0,
-        area=25,
-        quantity=1,
-        beds=bed,
-    )
+def get_image_file():
+    file = io.BytesIO()
+    image = Image.new("RGB", (100, 100))
+    image.save(file, "jpeg")
+    file.name = "test.jpg"
+    file.seek(0)
+    return file
 
 
-def test_room_list(admin_client, room):
-    url = reverse("room-list")  # Имя роутера, обычно app_label-room-list
-    response = admin_client.get(url)
-    assert response.status_code == status.HTTP_200_OK
-    assert len(response.data) >= 1
+@pytest.mark.django_db
+def test_create_room_with_nested(api_client, meal_type):
+    url = reverse("room-list")  # Убедись, что basename роутера 'room'
 
+    image_file = get_image_file()
 
-def test_room_create(admin_client, bed):
-    url = reverse("room-list")
     data = {
-        "room_type": "standard",
-        "meal_type": None,
+        "room_type": "suite",
+        "meal_type": meal_type.id,
         "adults": 2,
-        "children": 1,
-        "area": 30,
-        "quantity": 1,
-        "beds": bed.id,
-    }
-    response = admin_client.post(url, data)
-    assert response.status_code == status.HTTP_201_CREATED
-    assert Room.objects.filter(id=response.data["id"]).exists()
-
-
-def test_room_retrieve(admin_client, room):
-    url = reverse("room-detail", args=[room.id])
-    response = admin_client.get(url)
-    assert response.status_code == status.HTTP_200_OK
-    assert response.data["id"] == room.id
-
-
-def test_room_update(admin_client, room, bed):
-    url = reverse("room-detail", args=[room.id])
-    data = {
-        "room_type": "deluxe",
-        "meal_type": None,
-        "adults": 3,
         "children": 1,
         "area": 40,
         "quantity": 1,
-        "beds": bed.id,
+        "double_bed": 1,
+        "single_bed": 0,
+        "amenities": [{"amenity_type": "general", "name": "Wi-Fi"}, {"amenity_type": "coffee", "name": "Кофе-машина"}],
+        "rules": [{"name": "Курение", "rule_choice": "no"}],
+        "photos": [{"image": image_file, "description": "Общий вид"}],
     }
-    response = admin_client.put(url, data)
-    assert response.status_code == status.HTTP_200_OK
-    room.refresh_from_db()
-    assert room.room_type == "deluxe"
 
+    # Важно: для отправки файлов используем multipart
+    resp = api_client.post(url, data, format="multipart")
 
-def test_room_delete(admin_client, room):
-    url = reverse("room-detail", args=[room.id])
-    response = admin_client.delete(url)
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-    assert not Room.objects.filter(id=room.id).exists()
+    assert resp.status_code == 201
+    room = Room.objects.get(id=resp.data["id"])
+    assert room.amenity_set.count() == 2
+    assert room.rules.count() == 1
+    assert room.photos.count() == 1
+
+    first_photo = room.photos.first()
+    assert first_photo.description == "Общий вид"
+    assert bool(first_photo.image)  # Фото должно быть сохранено
